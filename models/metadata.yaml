@@ -1,0 +1,125 @@
+description: Ultralytics best model trained on atlas_dataset_augmented_copy/data.yaml
+author: Ultralytics
+date: '2026-06-02T19:13:45.501638'
+version: 8.4.23
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: detect
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  53: wasser
+  78: snickers
+  64: kitkat
+  18: caferoyal_classicmacchiato
+  96: momo_icetea
+  75: valser_still
+  42: comella_schokodrink
+  45: fini_galaxymix_packung
+  9: branche_maxi
+  94: berger_mailaenderli
+  55: airwaves_menthoneucalyptus_riegel
+  50: erle
+  8: volvic_pink
+  16: skittles_sour_riegel
+  60: ragusa
+  13: panettone
+  59: granini_orange
+  47: berger_schoggitoertli
+  41: haribo_goldbaerensauer
+  74: days_croissantschoko_packung
+  85: snickers_wei
+  0: jacklinks_beefjerkyorginal
+  86: lorenz_studentenfutter
+  43: milka_tender
+  21: ramseier_schorle
+  40: rivella_rot
+  76: kagi_specialedition
+  71: henniez_blau
+  3: tarteaupomme
+  17: ramseier_orange_tetrapak
+  7: bounty
+  81: stimorol_spearmint_riegel
+  62: zweifel_salz
+  102: fuse_peach
+  88: redbull_light
+  77: lorenz_nicnacs
+  91: sinalco_orange
+  2: jlbrichard_gauffre
+  95: coke_zero_flasche
+  46: knoppers_riegel
+  99: berger_spitzbueb
+  37: valser_classic
+  52: ramseier_jusdepomme
+  56: fuse_peach_dose
+  26: c+swiss_dosenabisicetea
+  4: coke
+  32: coke_flasche
+  48: sinalco
+  103: balisto_muesli
+  84: comella_schokodrink_flasche
+  70: coke_dose
+  49: darwida_chocaulait
+  98: henniez_rot
+  31: ovomaltine_kekse
+  90: twix
+  61: jlbrichard_gauffrechoko
+  27: berger_bruensli
+  54: volvic_teeminze
+  101: pepsi_max
+  38: stimorol_wildcherry_riegel
+  6: schweppes_citrus
+  87: zweifel_graneochilli
+  29: kinder_delice
+  24: zweifel_saltedpeanuts
+  28: oreo
+  51: henniez_gruen
+  58: volvic_pinapple
+  79: powerbar_proteinplusschoko
+  44: vivitz_gruentee
+  92: sprite_flasche
+  25: mnms_gelb
+  93: schweppes_bitterlemon
+  1: mezzomix
+  14: torino
+  11: berger_nusstoertli
+  10: fuse_lemon
+  63: maltesers_teasers
+  83: milka_peanutbutter
+  15: tiki_himbeer_brause
+  69: berger_vogelnestli
+  23: fini_jellykisses_packung
+  67: evian
+  65: bifi_roll
+  34: kagi
+  30: maltesers
+  72: redbull
+  19: balisto_yoberry
+  66: bueno
+  100: zweifel_paprika
+  82: darwida_sandwich
+  68: caprisun_multivitamin
+  5: vivitz_classiczitrone
+  80: toffifee
+  12: coke_light_flasche
+  73: fuse_blackicetea
+  22: fuse_lemon_dose
+  57: milka_oreo_riegel
+  97: valser_vivabirne
+  20: fanta
+  36: corny_schoko
+  35: vitaminwell_reload
+  39: malburner_partysticks
+  33: ramseier_jusdepomme_tetrapak
+  89: lindt_nocciolate
+args:
+  batch: 1
+  fraction: 1.0
+  half: true
+  int8: false
+  nms: false
+channels: 3
+end2end: false
