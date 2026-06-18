@@ -206,7 +206,7 @@ with st.sidebar:
                             help="Lower = more detections (may include false positives)")
     iou_thresh = st.slider("NMS IoU threshold", 0.10, 0.95, DEFAULT_IOU, 0.05,
                            help="Higher = keep more overlapping boxes (good for dense scenes)")
-    border_mult = st.slider("Border thickness", 0.1, 5.0, 1.0, 0.1,
+    border_mult = st.slider("Border thickness", 0.1, 1.0, 0.5, 0.1,
                             help="Multiplier on bounding box and label size")
     st.markdown("---")
     st.subheader("All detectable classes")
