@@ -135,16 +135,58 @@ def postprocess(outputs, scale, pad_left, pad_top, orig_h, orig_w, conf_thresh, 
 
 def draw_detections(image: np.ndarray, boxes, confidences, class_ids):
     out = image.copy()
+    h, w = out.shape[:2]
+    # Scale thickness and font relative to image size so they're readable at any resolution
+    scale_f = max(w, h) / 1000.0
+    thickness = max(2, int(3 * scale_f))
+    font_scale = max(0.6, 1.0 * scale_f)
+    font_thickness = max(1, int(2 * scale_f))
     for box, conf, cid in zip(boxes, confidences, class_ids):
         color = COLORS[cid % len(COLORS)]
         x1, y1, x2, y2 = box
-        cv2.rectangle(out, (x1, y1), (x2, y2), color, 2)
+        cv2.rectangle(out, (x1, y1), (x2, y2), color, thickness)
         label = f"{CLASS_NAMES.get(cid, cid)} {conf:.2f}"
-        (tw, th), bl = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)
-        cv2.rectangle(out, (x1, y1 - th - bl - 4), (x1 + tw, y1), color, -1)
-        cv2.putText(out, label, (x1, y1 - bl - 2),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1)
+        (tw, th), bl = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)
+        pad = int(4 * scale_f)
+        cv2.rectangle(out, (x1, max(0, y1 - th - bl - pad)), (x1 + tw + pad, y1), color, -1)
+        cv2.putText(out, label, (x1 + pad // 2, y1 - bl - pad // 2),
+                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), font_thickness)
     return out
+
+
+def show_result(pil_orig, result_img, n_det, detections, key_prefix):
+    """Shared UI block: side-by-side images + zoom crop + detection list."""
+    col1, col2 = st.columns(2)
+    with col1:
+        st.image(pil_orig, caption="Original", use_container_width=True)
+    with col2:
+        st.image(result_img, caption=f"Detections ({n_det})", use_container_width=True)
+
+    # ── Zoom crop ──────────────────────────────────────────────────────────
+    with st.expander("🔍 Zoom into a region", expanded=False):
+        rw, rh = result_img.size
+        z_col1, z_col2 = st.columns(2)
+        with z_col1:
+            x_pct = st.slider("Centre X (%)", 0, 100, 50, key=f"{key_prefix}_zx")
+            zoom = st.slider("Zoom level", 1, 8, 3, key=f"{key_prefix}_zz")
+        with z_col2:
+            y_pct = st.slider("Centre Y (%)", 0, 100, 50, key=f"{key_prefix}_zy")
+        crop_w = rw // zoom
+        crop_h = rh // zoom
+        cx = int(rw * x_pct / 100)
+        cy = int(rh * y_pct / 100)
+        x0 = max(0, min(cx - crop_w // 2, rw - crop_w))
+        y0 = max(0, min(cy - crop_h // 2, rh - crop_h))
+        cropped = result_img.crop((x0, y0, x0 + crop_w, y0 + crop_h))
+        st.image(cropped, caption=f"Zoom ×{zoom} — ({x0},{y0}) to ({x0+crop_w},{y0+crop_h})",
+                 use_container_width=True)
+
+    if detections:
+        st.subheader("Detected objects")
+        for name, conf in sorted(detections, key=lambda x: -x[1]):
+            st.markdown(f"- **{name}** — confidence {conf:.3f}")
+    else:
+        st.info("No objects detected above the confidence threshold.")
 
 
 def run_inference(pil_image: Image.Image, session, conf_thresh=DEFAULT_CONF, iou_thresh=DEFAULT_IOU):
@@ -179,17 +221,7 @@ with tab_camera:
         pil_img = Image.open(camera_img)
         with st.spinner("Running inference…"):
             result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh)
-        col1, col2 = st.columns(2)
-        with col1:
-            st.image(pil_img, caption="Original", use_container_width=True)
-        with col2:
-            st.image(result_img, caption=f"Detections ({n_det})", use_container_width=True)
-        if detections:
-            st.subheader("Detected objects")
-            for name, conf in sorted(detections, key=lambda x: -x[1]):
-                st.markdown(f"- **{name}** — confidence {conf:.3f}")
-        else:
-            st.info("No objects detected above the confidence threshold.")
+        show_result(pil_img, result_img, n_det, detections, "cam")
 
 # ── Upload tab ───────────────────────────────────────────────────────────────
 with tab_upload:
@@ -199,17 +231,7 @@ with tab_upload:
         pil_img = Image.open(uploaded)
         with st.spinner("Running inference…"):
             result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh)
-        col1, col2 = st.columns(2)
-        with col1:
-            st.image(pil_img, caption="Original", use_container_width=True)
-        with col2:
-            st.image(result_img, caption=f"Detections ({n_det})", use_container_width=True)
-        if detections:
-            st.subheader("Detected objects")
-            for name, conf in sorted(detections, key=lambda x: -x[1]):
-                st.markdown(f"- **{name}** — confidence {conf:.3f}")
-        else:
-            st.info("No objects detected above the confidence threshold.")
+        show_result(pil_img, result_img, n_det, detections, "up")
 
 # ── Built-in examples tab ────────────────────────────────────────────────────
 with tab_builtin:
@@ -224,18 +246,8 @@ with tab_builtin:
         pil_img = Image.open(chosen_path)
         if st.button("Run detection", key="builtin_run"):
             with st.spinner("Running inference…"):
-                result_img, n_det, detections = run_inference(pil_img, session)
-            col1, col2 = st.columns(2)
-            with col1:
-                st.image(pil_img, caption="Original", use_container_width=True)
-            with col2:
-                st.image(result_img, caption=f"Detections ({n_det})", use_container_width=True)
-            if detections:
-                st.subheader("Detected objects")
-                for name, conf in sorted(detections, key=lambda x: -x[1]):
-                    st.markdown(f"- **{name}** — confidence {conf:.3f}")
-            else:
-                st.info("No objects detected above the confidence threshold.")
+                result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh)
+            show_result(pil_img, result_img, n_det, detections, "bi")
         else:
             st.image(pil_img, caption=selected, use_container_width=True)
 
