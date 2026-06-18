@@ -111,11 +111,16 @@ def postprocess(outputs, scale, pad_left, pad_top, orig_h, orig_w, conf_thresh, 
     if len(boxes_raw) == 0:
         return [], [], []
 
-    # cx,cy,w,h → x1,y1,x2,y2 (in padded 640×640 space)
-    x1 = boxes_raw[:, 0] - boxes_raw[:, 2] / 2
-    y1 = boxes_raw[:, 1] - boxes_raw[:, 3] / 2
-    x2 = boxes_raw[:, 0] + boxes_raw[:, 2] / 2
-    y2 = boxes_raw[:, 1] + boxes_raw[:, 3] / 2
+    # cx,cy,w,h are normalised [0,1] → convert to pixels in padded 640×640 space
+    cx = boxes_raw[:, 0] * INPUT_SIZE
+    cy = boxes_raw[:, 1] * INPUT_SIZE
+    bw = boxes_raw[:, 2] * INPUT_SIZE
+    bh = boxes_raw[:, 3] * INPUT_SIZE
+
+    x1 = cx - bw / 2
+    y1 = cy - bh / 2
+    x2 = cx + bw / 2
+    y2 = cy + bh / 2
 
     # Remove padding and scale back to original image
     x1 = np.clip((x1 - pad_left) / scale, 0, orig_w)
