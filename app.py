@@ -158,9 +158,9 @@ def show_result(pil_orig, result_img, n_det, detections, key_prefix):
     """Shared UI block: side-by-side images + zoom crop + detection list."""
     col1, col2 = st.columns(2)
     with col1:
-        st.image(pil_orig, caption="Original", use_container_width=True)
+        st.image(pil_orig, caption="Original", width=500)
     with col2:
-        st.image(result_img, caption=f"Detections ({n_det})", use_container_width=True)
+        st.image(result_img, caption=f"Detections ({n_det})", width=500)
 
     if detections:
         st.subheader("Detected objects")
@@ -250,4 +250,4 @@ with tab_builtin:
                 result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh)
             show_result(pil_img, result_img, n_det, detections, "bi")
         else:
-            st.image(pil_img, caption=selected, use_container_width=True)
+            st.image(pil_img, caption=selected, width=500)
