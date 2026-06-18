@@ -245,9 +245,6 @@ with tab_builtin:
         selected = st.selectbox("Choose an example image", names)
         chosen_path = os.path.join(BUILTIN_DIR, selected)
         pil_img = Image.open(chosen_path)
-        if st.button("Run detection", key="builtin_run"):
-            with st.spinner("Running inference…"):
-                result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh)
-            show_result(pil_img, result_img, n_det, detections, "bi")
-        else:
-            st.image(pil_img, caption=selected, width=500)
+        with st.spinner("Running inference…"):
+            result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh)
+        show_result(pil_img, result_img, n_det, detections, "bi")
