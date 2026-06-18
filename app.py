@@ -187,8 +187,7 @@ def run_inference(pil_image: Image.Image, session, conf_thresh=DEFAULT_CONF, iou
 # ── Streamlit UI ─────────────────────────────────────────────────────────────
 st.set_page_config(page_title="YOLO Object Detection", layout="wide", page_icon="🎯")
 
-st.title("🎯 YOLO Object Detection")
-st.markdown("Detect snacks, beverages & more with a YOLOv8 model (104 classes).")
+st.title("YOLOv8 Object Detection")
 
 session = load_model()
 
