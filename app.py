@@ -48,8 +48,8 @@ CLASS_NAMES = {
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "best.onnx")
 BUILTIN_DIR = os.path.join(os.path.dirname(__file__), "dataset", "images", "test")
-CONF_THRESHOLD = 0.25
-IOU_THRESHOLD = 0.45
+DEFAULT_CONF = 0.15
+DEFAULT_IOU = 0.60
 INPUT_SIZE = 640
 
 # ── Colour palette ───────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ def nms(boxes, scores, iou_thresh):
     return keep
 
 
-def postprocess(outputs, scale, pad_left, pad_top, orig_h, orig_w):
+def postprocess(outputs, scale, pad_left, pad_top, orig_h, orig_w, conf_thresh, iou_thresh):
     """Parse YOLOv8 output tensor [1, 4+num_classes, 8400] → detections."""
     pred = outputs[0][0]  # (4+C, 8400)
     boxes_raw = pred[:4].T   # (8400, 4) cx cy w h in padded space
@@ -103,7 +103,7 @@ def postprocess(outputs, scale, pad_left, pad_top, orig_h, orig_w):
     class_ids = scores_all.argmax(axis=1)
     confidences = scores_all[np.arange(len(class_ids)), class_ids]
 
-    mask = confidences >= CONF_THRESHOLD
+    mask = confidences >= conf_thresh
     boxes_raw = boxes_raw[mask]
     confidences = confidences[mask]
     class_ids = class_ids[mask]
@@ -124,7 +124,7 @@ def postprocess(outputs, scale, pad_left, pad_top, orig_h, orig_w):
     y2 = np.clip((y2 - pad_top) / scale, 0, orig_h)
 
     boxes = np.stack([x1, y1, x2, y2], axis=1)
-    keep = nms(boxes, confidences, IOU_THRESHOLD)
+    keep = nms(boxes, confidences, iou_thresh)
     return boxes[keep].astype(int), confidences[keep], class_ids[keep]
 
 
@@ -142,13 +142,13 @@ def draw_detections(image: np.ndarray, boxes, confidences, class_ids):
     return out
 
 
-def run_inference(pil_image: Image.Image, session):
+def run_inference(pil_image: Image.Image, session, conf_thresh=DEFAULT_CONF, iou_thresh=DEFAULT_IOU):
     img_rgb = np.array(pil_image.convert("RGB"))
     h, w = img_rgb.shape[:2]
     blob, scale, pl, pt = preprocess(img_rgb)
     input_name = session.get_inputs()[0].name
     outputs = session.run(None, {input_name: blob})
-    boxes, confs, cids = postprocess(outputs, scale, pl, pt, h, w)
+    boxes, confs, cids = postprocess(outputs, scale, pl, pt, h, w, conf_thresh, iou_thresh)
     result = draw_detections(img_rgb, boxes, confs, cids)
     return Image.fromarray(result), len(boxes), list(zip(
         [CLASS_NAMES.get(int(c), str(c)) for c in cids],
@@ -173,7 +173,7 @@ with tab_camera:
     if camera_img:
         pil_img = Image.open(camera_img)
         with st.spinner("Running inference…"):
-            result_img, n_det, detections = run_inference(pil_img, session)
+            result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh)
         col1, col2 = st.columns(2)
         with col1:
             st.image(pil_img, caption="Original", use_container_width=True)
@@ -193,7 +193,7 @@ with tab_upload:
     if uploaded:
         pil_img = Image.open(uploaded)
         with st.spinner("Running inference…"):
-            result_img, n_det, detections = run_inference(pil_img, session)
+            result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh)
         col1, col2 = st.columns(2)
         with col1:
             st.image(pil_img, caption="Original", use_container_width=True)
@@ -234,18 +234,22 @@ with tab_builtin:
         else:
             st.image(pil_img, caption=selected, use_container_width=True)
 
-# ── Sidebar info ─────────────────────────────────────────────────────────────
+# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("Model info")
-    st.markdown(f"""
+    st.markdown("""
 | | |
 |---|---|
 | **Model** | YOLOv8 (ONNX) |
 | **Classes** | 104 |
 | **Input size** | 640 × 640 |
-| **Conf threshold** | {CONF_THRESHOLD} |
-| **IoU threshold** | {IOU_THRESHOLD} |
 """)
+    st.markdown("---")
+    st.subheader("Detection thresholds")
+    conf_thresh = st.slider("Confidence threshold", 0.05, 0.95, DEFAULT_CONF, 0.01,
+                            help="Lower = more detections (may include false positives)")
+    iou_thresh = st.slider("NMS IoU threshold", 0.10, 0.95, DEFAULT_IOU, 0.05,
+                           help="Higher = keep more overlapping boxes (good for dense scenes)")
     st.markdown("---")
     st.subheader("All detectable classes")
     for cid, name in sorted(CLASS_NAMES.items()):
