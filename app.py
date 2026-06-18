@@ -133,13 +133,12 @@ def postprocess(outputs, scale, pad_left, pad_top, orig_h, orig_w, conf_thresh, 
     return boxes[keep].astype(int), confidences[keep], class_ids[keep]
 
 
-def draw_detections(image: np.ndarray, boxes, confidences, class_ids):
+def draw_detections(image: np.ndarray, boxes, confidences, class_ids, border_mult=1.0):
     out = image.copy()
     h, w = out.shape[:2]
-    # Scale thickness and font relative to image size so they're readable at any resolution
-    scale_f = max(w, h) / 1000.0
+    scale_f = max(w, h) / 1000.0 * border_mult
     thickness = max(1, int(1.5 * scale_f))
-    font_scale = max(0.6, 1.0 * scale_f)
+    font_scale = max(0.4, 1.0 * scale_f)
     font_thickness = max(1, int(2 * scale_f))
     for box, conf, cid in zip(boxes, confidences, class_ids):
         color = COLORS[cid % len(COLORS)]
@@ -170,14 +169,14 @@ def show_result(pil_orig, result_img, n_det, detections, key_prefix):
         st.info("No objects detected above the confidence threshold.")
 
 
-def run_inference(pil_image: Image.Image, session, conf_thresh=DEFAULT_CONF, iou_thresh=DEFAULT_IOU):
+def run_inference(pil_image: Image.Image, session, conf_thresh=DEFAULT_CONF, iou_thresh=DEFAULT_IOU, border_mult=1.0):
     img_rgb = np.array(pil_image.convert("RGB"))
     h, w = img_rgb.shape[:2]
     blob, scale, pl, pt = preprocess(img_rgb)
     input_name = session.get_inputs()[0].name
     outputs = session.run(None, {input_name: blob})
     boxes, confs, cids = postprocess(outputs, scale, pl, pt, h, w, conf_thresh, iou_thresh)
-    result = draw_detections(img_rgb, boxes, confs, cids)
+    result = draw_detections(img_rgb, boxes, confs, cids, border_mult)
     return Image.fromarray(result), len(boxes), list(zip(
         [CLASS_NAMES.get(int(c), str(c)) for c in cids],
         [float(f"{s:.3f}") for s in confs]
@@ -207,6 +206,8 @@ with st.sidebar:
                             help="Lower = more detections (may include false positives)")
     iou_thresh = st.slider("NMS IoU threshold", 0.10, 0.95, DEFAULT_IOU, 0.05,
                            help="Higher = keep more overlapping boxes (good for dense scenes)")
+    border_mult = st.slider("Border thickness", 0.1, 5.0, 1.0, 0.1,
+                            help="Multiplier on bounding box and label size")
     st.markdown("---")
     st.subheader("All detectable classes")
     for cid, name in sorted(CLASS_NAMES.items()):
@@ -221,7 +222,7 @@ with tab_camera:
     if camera_img:
         pil_img = Image.open(camera_img)
         with st.spinner("Running inference…"):
-            result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh)
+            result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh, border_mult)
         show_result(pil_img, result_img, n_det, detections, "cam")
 
 # ── Upload tab ───────────────────────────────────────────────────────────────
@@ -231,7 +232,7 @@ with tab_upload:
     if uploaded:
         pil_img = Image.open(uploaded)
         with st.spinner("Running inference…"):
-            result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh)
+            result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh, border_mult)
         show_result(pil_img, result_img, n_det, detections, "up")
 
 # ── Built-in examples tab ────────────────────────────────────────────────────
@@ -246,5 +247,5 @@ with tab_builtin:
         chosen_path = os.path.join(BUILTIN_DIR, selected)
         pil_img = Image.open(chosen_path)
         with st.spinner("Running inference…"):
-            result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh)
+            result_img, n_det, detections = run_inference(pil_img, session, conf_thresh, iou_thresh, border_mult)
         show_result(pil_img, result_img, n_det, detections, "bi")
