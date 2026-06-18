@@ -138,7 +138,7 @@ def draw_detections(image: np.ndarray, boxes, confidences, class_ids):
     h, w = out.shape[:2]
     # Scale thickness and font relative to image size so they're readable at any resolution
     scale_f = max(w, h) / 1000.0
-    thickness = max(2, int(3 * scale_f))
+    thickness = max(1, int(1.5 * scale_f))
     font_scale = max(0.6, 1.0 * scale_f)
     font_thickness = max(1, int(2 * scale_f))
     for box, conf, cid in zip(boxes, confidences, class_ids):
@@ -161,25 +161,6 @@ def show_result(pil_orig, result_img, n_det, detections, key_prefix):
         st.image(pil_orig, caption="Original", use_container_width=True)
     with col2:
         st.image(result_img, caption=f"Detections ({n_det})", use_container_width=True)
-
-    # ── Zoom crop ──────────────────────────────────────────────────────────
-    with st.expander("🔍 Zoom into a region", expanded=False):
-        rw, rh = result_img.size
-        z_col1, z_col2 = st.columns(2)
-        with z_col1:
-            x_pct = st.slider("Centre X (%)", 0, 100, 50, key=f"{key_prefix}_zx")
-            zoom = st.slider("Zoom level", 1, 8, 3, key=f"{key_prefix}_zz")
-        with z_col2:
-            y_pct = st.slider("Centre Y (%)", 0, 100, 50, key=f"{key_prefix}_zy")
-        crop_w = rw // zoom
-        crop_h = rh // zoom
-        cx = int(rw * x_pct / 100)
-        cy = int(rh * y_pct / 100)
-        x0 = max(0, min(cx - crop_w // 2, rw - crop_w))
-        y0 = max(0, min(cy - crop_h // 2, rh - crop_h))
-        cropped = result_img.crop((x0, y0, x0 + crop_w, y0 + crop_h))
-        st.image(cropped, caption=f"Zoom ×{zoom} — ({x0},{y0}) to ({x0+crop_w},{y0+crop_h})",
-                 use_container_width=True)
 
     if detections:
         st.subheader("Detected objects")
