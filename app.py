@@ -211,6 +211,27 @@ st.markdown("Detect snacks, beverages & more with a YOLOv8 model (104 classes)."
 
 session = load_model()
 
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.header("Model info")
+    st.markdown("""
+| | |
+|---|---|
+| **Model** | YOLOv8 (ONNX) |
+| **Classes** | 104 |
+| **Input size** | 640 × 640 |
+""")
+    st.markdown("---")
+    st.subheader("Detection thresholds")
+    conf_thresh = st.slider("Confidence threshold", 0.05, 0.95, DEFAULT_CONF, 0.01,
+                            help="Lower = more detections (may include false positives)")
+    iou_thresh = st.slider("NMS IoU threshold", 0.10, 0.95, DEFAULT_IOU, 0.05,
+                           help="Higher = keep more overlapping boxes (good for dense scenes)")
+    st.markdown("---")
+    st.subheader("All detectable classes")
+    for cid, name in sorted(CLASS_NAMES.items()):
+        st.markdown(f"- {name}")
+
 tab_camera, tab_upload, tab_builtin = st.tabs(["📷 Camera", "📂 Upload", "🖼️ Built-in Examples"])
 
 # ── Camera tab ───────────────────────────────────────────────────────────────
@@ -250,24 +271,3 @@ with tab_builtin:
             show_result(pil_img, result_img, n_det, detections, "bi")
         else:
             st.image(pil_img, caption=selected, use_container_width=True)
-
-# ── Sidebar ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.header("Model info")
-    st.markdown("""
-| | |
-|---|---|
-| **Model** | YOLOv8 (ONNX) |
-| **Classes** | 104 |
-| **Input size** | 640 × 640 |
-""")
-    st.markdown("---")
-    st.subheader("Detection thresholds")
-    conf_thresh = st.slider("Confidence threshold", 0.05, 0.95, DEFAULT_CONF, 0.01,
-                            help="Lower = more detections (may include false positives)")
-    iou_thresh = st.slider("NMS IoU threshold", 0.10, 0.95, DEFAULT_IOU, 0.05,
-                           help="Higher = keep more overlapping boxes (good for dense scenes)")
-    st.markdown("---")
-    st.subheader("All detectable classes")
-    for cid, name in sorted(CLASS_NAMES.items()):
-        st.markdown(f"- {name}")
